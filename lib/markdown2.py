@@ -988,7 +988,7 @@ class Markdown(object):
 
     _hr_re = re.compile(r'^[ ]{0,3}([-_*][ ]{0,2}){3,}$', re.M)
 
-    def _run_block_gamut(self, text):
+    def _run_block_gamut(self, text, is_recursive=False):
         # These are all the transformations that form block-level
         # tags like paragraphs, headers, and list items.
 
@@ -1013,8 +1013,8 @@ class Markdown(object):
             text = self._do_wiki_tables(text)
         if "tables" in self.extras:
             text = self._do_tables(text)
-
-        text = self._do_code_blocks(text)
+        if not is_recursive:
+            text = self._do_code_blocks(text)
 
         text = self._do_block_quotes(text)
 
@@ -2113,7 +2113,7 @@ class Markdown(object):
             bq = self._bq_one_level_re.sub('', bq)
         # trim whitespace-only lines
         bq = self._ws_only_line_re.sub('', bq)
-        bq = self._run_block_gamut(bq)          # recurse
+        bq = self._run_block_gamut(bq, is_recursive=True)          # recurse
 
         bq = re.sub('(?m)^', '  ', bq)
         # These leading spaces screw with <pre> content, so we need to fix that:
