@@ -743,6 +743,16 @@ class Markdown(object):
         self.html_blocks[key] = html
         return "\n\n" + key + "\n\n"
 
+    _latex_re = pattern = re.compile(
+        r'(~.*?~)|(\$\$.*?\$\$)',
+        re.S | re.X | re.M,
+    )
+    def _hash_latex_equation(self, match):
+        latex = match.group()
+        key = _hash_text(latex)
+        self.html_blocks[key] = latex
+        return key
+
     def _hash_html_blocks(self, text, raw=False):
         """Hashify HTML blocks
 
@@ -755,7 +765,7 @@ class Markdown(object):
         @param raw {boolean} indicates if these are raw HTML blocks in
             the original source. It makes a difference in "safe" mode.
         """
-        if '<' not in text:
+        if '<' not in text and (raw == True or "latex" not in self.extras):
             return text
 
         # Pass `raw` value into our calls to self._hash_html_block_sub.
@@ -848,6 +858,9 @@ class Markdown(object):
             #    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="chapter_1.md"/>
             _xml_oneliner_re = _xml_oneliner_re_from_tab_width(self.tab_width)
             text = _xml_oneliner_re.sub(hash_html_block_sub, text)
+
+        if raw == False and "latex" in self.extras:
+            text = self._latex_re.sub(self._hash_latex_equation, text)
 
         return text
 
@@ -2132,6 +2145,11 @@ class Markdown(object):
         else:
             return self._block_quote_re.sub(self._block_quote_sub, text)
 
+    _latex_md5_block_re = re.compile(r'md5-[0-9a-f]+')
+    def _restore_latex(self, m):
+        key = m.group()
+        return self.html_blocks.get(key, key)
+
     def _form_paragraphs(self, text):
         # Strip leading and trailing lines:
         text = text.strip('\n')
@@ -2171,6 +2189,9 @@ class Markdown(object):
 
                 if cuddled_list:
                     grafs.append(cuddled_list)
+
+        if "latex" in self.extras:
+            grafs = [self._latex_md5_block_re.sub(self._restore_latex, graf) for graf in grafs]
 
         return "\n\n".join(grafs)
 
