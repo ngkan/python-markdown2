@@ -753,6 +753,9 @@ class Markdown(object):
         self.html_blocks[key] = latex
         return key
 
+    def _do_latex(self, text):
+        return self._latex_re.sub(self._hash_latex_equation, text)
+
     def _hash_html_blocks(self, text, raw=False):
         """Hashify HTML blocks
 
@@ -765,7 +768,7 @@ class Markdown(object):
         @param raw {boolean} indicates if these are raw HTML blocks in
             the original source. It makes a difference in "safe" mode.
         """
-        if '<' not in text and (raw == True or "latex" not in self.extras):
+        if '<' not in text:
             return text
 
         # Pass `raw` value into our calls to self._hash_html_block_sub.
@@ -858,9 +861,6 @@ class Markdown(object):
             #    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="chapter_1.md"/>
             _xml_oneliner_re = _xml_oneliner_re_from_tab_width(self.tab_width)
             text = _xml_oneliner_re.sub(hash_html_block_sub, text)
-
-        if raw == False and "latex" in self.extras:
-            text = self._latex_re.sub(self._hash_latex_equation, text)
 
         return text
 
@@ -1221,6 +1221,10 @@ class Markdown(object):
 
         if "strike" in self.extras:
             text = self._do_strike(text)
+        
+        # Must come after _do_strike because of the delim ~
+        if "latex" in self.extras:
+            text = self._do_latex(text)
 
         if "underline" in self.extras:
             text = self._do_underline(text)
