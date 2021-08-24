@@ -265,6 +265,7 @@ class Markdown(object):
         self.urls = {}
         self.titles = {}
         self.html_blocks = {}
+        self.latex_blocks = {}
         self.html_spans = {}
         self.list_level = 0
         self.extras = self._instance_extras.copy()
@@ -751,7 +752,7 @@ class Markdown(object):
     def _hash_latex_equation(self, match):
         latex = match.group()
         key = _hash_text(latex)
-        self.html_blocks[key] = latex
+        self.latex_blocks[key] = latex
         return key
 
     def _do_latex(self, text):
@@ -2153,8 +2154,11 @@ class Markdown(object):
     _latex_md5_block_re = re.compile(r'md5-[0-9a-f]{32,32}')
     def _restore_latex(self, m):
         key = m.group()
-        return self._latex_md5_block_re.sub(self._unescape_special_chars_in_latex,
-                                            self.html_blocks.get(key, key))
+        text = self.latex_blocks.get(key, None)
+        # This block is not a latex block, so we don't do anything
+        if text is None:
+            return key
+        return self._latex_md5_block_re.sub(self._unescape_special_chars_in_latex, text)
 
     def _unescape_special_chars_in_latex(self, m):
         # Swap back in all the special characters we've hidden.
