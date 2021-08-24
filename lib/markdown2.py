@@ -259,6 +259,7 @@ class Markdown(object):
         if "smarty-pants" in self.extras:
             self._escape_table['"'] = _hash_text('"')
             self._escape_table["'"] = _hash_text("'")
+        self._reverse_escape_table = {y: x for x, y in self._escape_table.items()}
 
     def reset(self):
         self.urls = {}
@@ -2149,10 +2150,17 @@ class Markdown(object):
         else:
             return self._block_quote_re.sub(self._block_quote_sub, text)
 
-    _latex_md5_block_re = re.compile(r'md5-[0-9a-f]+')
+    _latex_md5_block_re = re.compile(r'md5-[0-9a-f]{32,32}')
     def _restore_latex(self, m):
         key = m.group()
-        return self.html_blocks.get(key, key)
+        return self._latex_md5_block_re.sub(self._unescape_special_chars_in_latex,
+                                            self.html_blocks.get(key, key))
+
+    def _unescape_special_chars_in_latex(self, m):
+        # Swap back in all the special characters we've hidden.
+        # Because it is in latex, so we put back the \\ char
+        key = m.group()
+        return '\\' + self._reverse_escape_table.get(key, key)
 
     def _form_paragraphs(self, text):
         # Strip leading and trailing lines:
